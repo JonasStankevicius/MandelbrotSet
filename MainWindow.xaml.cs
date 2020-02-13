@@ -26,12 +26,12 @@ namespace MandelbrotSet
         {
             InitializeComponent();
 
-            var arr = GerenateColorsArray((int)ImageControl.Width, (int)ImageControl.Height);
+            var fractal = new Fractal((int)ImageControl.Height, (int)ImageControl.Width);
+            fractal.Process();
+            var arr = fractal.GetColorsArray();
 
-            //var bitmap = ImageUtils.CreateBitmap((int)ImageControl.Width, (int)ImageControl.Height, new int[] { 255, 0, 0 });
             var bitmap = ImageUtils.CreateBitmap(arr);
-            //ImageUtils.SaveImage(bitmap);
-
+           
             var imageSource = ImageUtils.ImageSourceFromBitmap(bitmap);
 
             ImageControl.Source = imageSource;
