@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Drawing.Imaging;
+using System.Diagnostics;
 
 namespace MandelbrotSet
 {
@@ -30,18 +31,36 @@ namespace MandelbrotSet
             return bitmap;
         }
 
-        public static Bitmap CreateBitmap(int[,,] values)
+        public static Bitmap CreateBitmap(Color[,] colorArray)
         {
-            var height = values.GetLength(0);
-            var width = values.GetLength(1);            
+            var height = colorArray.GetLength(0);
+            var width = colorArray.GetLength(1);            
 
             Bitmap bitmap = new Bitmap(width, height);
 
-            for(int i = 0; i < width; i++)
+            for (int i = 0; i < width; i++)
             {
-                for(int j = 0; j < height; j++)
+                for (int j = 0; j < height; j++)
                 {
-                    var color = System.Drawing.Color.FromArgb(values[j,i,0], values[j,i,1], values[j,i,2]);
+                    bitmap.SetPixel(i, j, colorArray[j, i]);
+                }
+            }
+
+            return bitmap;
+        }
+
+        public static Bitmap CreateBitmap(int[,,] values)
+        {
+            var height = values.GetLength(0);
+            var width = values.GetLength(1);
+
+            Bitmap bitmap = new Bitmap(width, height);
+
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    var color = System.Drawing.Color.FromArgb(values[j, i, 0], values[j, i, 1], values[j, i, 2]);
                     bitmap.SetPixel(i, j, color);
                 }
             }
@@ -65,7 +84,9 @@ namespace MandelbrotSet
 
         public static void SaveImage(Bitmap bitmap, string filePath = "test.png")
         {
+            //bitmap.Save(filePath, ImageFormat.Jpeg);
             bitmap.Save(filePath, ImageFormat.Png);
+            Console.WriteLine("Image saved.");
         }
 
         public static List<Color> GenerateGradientColors(int n, Color initColor, Color endColor)
@@ -91,5 +112,79 @@ namespace MandelbrotSet
             return colorList;
         }
 
+        public static Color GetGradientColors(int coloIndex, int gradSize, Color initColor, Color endColor)
+        {
+            var rAverage = initColor.R + (int)((endColor.R - initColor.R) * coloIndex / gradSize);
+            var gAverage = initColor.G + (int)((endColor.G - initColor.G) * coloIndex / gradSize);
+            var bAverage = initColor.B + (int)((endColor.B - initColor.B) * coloIndex / gradSize);
+
+            return Color.FromArgb(rAverage, gAverage, bAverage);
+        }
+
+        public static System.Windows.Media.GradientStopCollection GetRainboxGradient(int iterations)
+        {
+            var colors = new List<Color>();
+            
+            colors.Add(Color.Purple);
+            colors.Add(Color.Blue);
+            colors.Add(Color.Teal);
+            colors.Add(Color.Green);
+            colors.Add(Color.Yellow);
+            colors.Add(Color.Orange);
+            colors.Add(Color.Red);
+
+
+            var fullGrad = new List<Color>();
+
+            int repeat = (int)((double)iterations / (double)colors.Count);
+            for (int i=0;i< repeat; i++)
+            {
+                fullGrad.AddRange(colors);
+            }
+
+            var grsc = new System.Windows.Media.GradientStopCollection(3);
+
+            double offset = 0.0;
+            foreach(var color in fullGrad)
+            {
+                offset += Math.Min(1.0 / (double)fullGrad.Count, 1.0);
+                grsc.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Color.FromRgb(color.R, color.G, color.B), offset));                
+            }
+
+            return grsc;
+        }
+
+        public static Color GetColorByOffset(System.Windows.Media.GradientStopCollection collection, double offset)
+        {
+            System.Windows.Media.GradientStop[] stops = collection.OrderBy(x => x.Offset).ToArray();
+            if (offset <= 0)
+            {
+                return Color.FromArgb(stops[0].Color.A, stops[0].Color.R, stops[0].Color.G, stops[0].Color.B);
+            }
+            if (offset >= 1)
+            {
+                var i = stops.Length - 1;
+                return Color.FromArgb(stops[i].Color.A, stops[i].Color.R, stops[i].Color.G, stops[i].Color.B);
+            }
+            System.Windows.Media.GradientStop left = stops[0], right = null;
+            foreach (System.Windows.Media.GradientStop stop in stops)
+            {
+                if (stop.Offset >= offset)
+                {
+                    right = stop;
+                    break;
+                }
+                left = stop;
+            }
+            Debug.Assert(right != null);
+            offset = Math.Round((offset - left.Offset) / (right.Offset - left.Offset), 2);
+
+            byte a = (byte)((right.Color.A - left.Color.A) * offset + left.Color.A);
+            byte r = (byte)((right.Color.R - left.Color.R) * offset + left.Color.R);
+            byte g = (byte)((right.Color.G - left.Color.G) * offset + left.Color.G);
+            byte b = (byte)((right.Color.B - left.Color.B) * offset + left.Color.B);
+
+            return Color.FromArgb(a, r, g, b);
+        }
     }
 }
