@@ -142,7 +142,7 @@ namespace MandelbrotSet
                 fullGrad.AddRange(colors);
             }
 
-            var grsc = new System.Windows.Media.GradientStopCollection(3);
+            var grsc = new System.Windows.Media.GradientStopCollection(fullGrad.Count);
 
             double offset = 0.0;
             foreach(var color in fullGrad)
@@ -150,6 +150,16 @@ namespace MandelbrotSet
                 offset += Math.Min(1.0 / (double)fullGrad.Count, 1.0);
                 grsc.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Color.FromRgb(color.R, color.G, color.B), offset));                
             }
+
+            return grsc;
+        }
+
+        public static System.Windows.Media.GradientStopCollection GetTwoColorGradient()
+        {
+            var grsc = new System.Windows.Media.GradientStopCollection(2);
+
+            grsc.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Color.FromRgb(Color.Purple.R, Color.Purple.G, Color.Purple.B), 0));
+            grsc.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Color.FromRgb(Color.Yellow.R, Color.Yellow.G, Color.Yellow.B), 1.0));
 
             return grsc;
         }
