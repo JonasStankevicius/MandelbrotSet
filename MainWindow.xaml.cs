@@ -81,7 +81,7 @@ namespace MandelbrotSet
             var xRange = new Range(Fractal.NormalizeValue(curRect.Left, 0, ImageControl.Width, -2, 2), Fractal.NormalizeValue(curRect.Right, 0, ImageControl.Width, -2, 2));
             var yRange = new Range(Fractal.NormalizeValue(curRect.Bottom, 0, ImageControl.Height, -2, 2), Fractal.NormalizeValue(curRect.Top, 0, ImageControl.Height, -2, 2));
 
-            var fractal = new Fractal((int)ImageControl.Height, (int)ImageControl.Width, xRange, yRange, iterations: 100, tileHeight: 50, tileWidth: 50);
+            var fractal = new Fractal((int)ImageControl.Height, (int)ImageControl.Width, xRange, yRange, iterations: 50, tileHeight: 50, tileWidth: 50);
             fractal.ProcessInParallel();
 
             //ImageUtils.SaveImage(bitmap);
