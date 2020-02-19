@@ -4,9 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MandelbrotSet"
-        mc:Ignorable="d"
-        Title="Mandelbrot set" Height="800" Width="800" ResizeMode="NoResize">
+        Title="Mandelbrot set" Height="650" Width="630" ResizeMode="NoResize">
+
     <Grid>
-        <Image Name="ImageControl" HorizontalAlignment="Left" VerticalAlignment="Top" Height="800" Width="800"/>
+        <Image Name="ImageControl" VerticalAlignment="Top" Height="621" Width="624" HorizontalAlignment="Left"/>
     </Grid>
 </Window>

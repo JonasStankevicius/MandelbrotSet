@@ -41,19 +41,20 @@ namespace MandelbrotSet
     class Fractal
     {
         #region members        
-        private Bitmap ColorMap;
-        private Color[,] Colors;
+        private byte[] ColorMap;
+        private int rawBitmapStride;
 
         private int tileWidth;
         private int tileHeight;
-        private Range rx;
-        private Range ry;
+        public Range rx;
+        public Range ry;
         private int iterations;
         #endregion
 
-        public Fractal(int height, int width, Range xRange, Range yRange, int iterations = 100, int tileHeight = 1000, int tileWidth = 1000)
-        {
-            ColorMap = new Bitmap(width, height);
+        public Fractal(int height, int width, Range xRange, Range yRange, int iterations = 100, int tileHeight = 100, int tileWidth = 100)
+        {            
+            rawBitmapStride = width * 3; //rgb            
+
             Height = height;
             Width = width;
 
@@ -80,78 +81,10 @@ namespace MandelbrotSet
         public Color EndColor { get; set; } = Color.Purple;
 
         #endregion
-
-        public void Process()
-        {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            Console.WriteLine($"Computing fractal ({Height}x{Width})");
-
-            var tiles = GenerateTiles();
-
-            Console.WriteLine($"{tiles.Count} tiles ({tileHeight}x{tileWidth})");
-
-            sw.Stop();
-            Console.WriteLine($"Elapsed = {sw.Elapsed}");
-            sw.Start();
-
-            //var gradColor = ImageUtils.GetTwoColorGradient();
-            var colorList = ImageUtils.GenerateGradientColors(Iterations, StartColor, EndColor);
-            foreach (var (coord, tile) in tiles)
-            {
-                for (int i = 0; i < tile.GetLength(0); i++)
-                {
-                    for (int j = 0; j < tile.GetLength(1); j++)
-                    {
-                        var color = Color.Black;
-                        //if(tile[i, j] > 7) //skip first iteratrions that take up most of the screen
-                        if (tile[i, j] >= 0) //skip only not escaped values
-                        {
-                            color = colorList[tile[i, j]];
-                        }
-
-                        var imgY = coord.Item1 + i;
-                        var imgX = coord.Item2 + j;
-
-                        ColorMap.SetPixel(imgX, imgY, color);
-                    }
-                }
-            }
-
-            sw.Stop();
-            Console.WriteLine($"Bitmap creation took = {sw.Elapsed}");
-        }
-
-        public List<Tuple<Tuple<int, int>, int[,]>> GenerateTiles()
-        {
-            var tiles = new List<Tuple<Tuple<int, int>, int[,]>>();
-
-            for (int i = 0; i < Height; i += tileHeight)
-            {
-                for (int j = 0; j < Width; j += tileWidth)
-                {
-                    int tileh = Math.Min(tileHeight, Height - i);
-                    int tilew = Math.Min(tileWidth, Width - j);
-
-                    var xRange = new Range(NormalizeValue(j, 0, Height, rx.Min, rx.Max), NormalizeValue(j + tilew, 0, Height, rx.Min, rx.Max));
-                    var yRange = new Range(NormalizeValue(i, 0, Width, ry.Max, ry.Min), NormalizeValue(i + tileh, 0, Width, ry.Max, ry.Min));
-
-                    var tile = ComputeTile(tilew, tileh, xRange, yRange, Iterations);
-
-                    tiles.Add(Tuple.Create(Tuple.Create(i, j), tile));
-                }
-            }
-
-            return tiles;
-        }
-
-        public void ProcessInParallel()
-        {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            Console.WriteLine($"Computing fractal ({Height}x{Width})");
-
-            Colors = new Color[Width, Height];
+        
+        public void ProcessInParallel(bool notParallel = false)
+        {            
+            ColorMap = new byte[Height * rawBitmapStride];
             var taskList = new List<Task>();
             var colorList = ImageUtils.GenerateGradientColors(Iterations, StartColor, EndColor);
 
@@ -168,34 +101,23 @@ namespace MandelbrotSet
                     int ii = i;
                     int jj = j;
 
-                    taskList.Add(Task.Run(() => ProcessTile(tilew, tileh, xRange, yRange, Iterations, ii, jj, colorList)));
+                    if (notParallel)
+                    {
+                        ProcessTile(tilew, tileh, xRange, yRange, Iterations, ii, jj, colorList);
+                    }
+                    else
+                    {
+                        taskList.Add(Task.Run(() => ProcessTile(tilew, tileh, xRange, yRange, Iterations, ii, jj, colorList)));
+                    }
                 }
             }
 
             Task.WaitAll(taskList.ToArray());
-
-            sw.Stop();
-            Console.WriteLine($"Elapsed = {sw.Elapsed}");
-            sw.Start();
-
-            for (int i = 0; i < Height; i ++)
-            {
-                for (int j = 0; j < Width; j ++)
-                {
-                    ColorMap.SetPixel(i, j, Colors[i, j]);
-                }
-            }
-
-            sw.Stop();
-            Console.WriteLine($"Bitmap creation took = {sw.Elapsed}");
         }
 
         public void ProcessTile(int width, int height, Range rx, Range ry, int iterations, int ti, int tj, List<Color> colorList)
         {
-            //Console.WriteLine($"Tile index ({ti},{tj})");
-
             var tile = ComputeTile(width, height, rx, ry, Iterations);
-
             for (int i = 0; i < tile.GetLength(0); i++)
             {
                 for (int j = 0; j < tile.GetLength(1); j++)
@@ -210,8 +132,9 @@ namespace MandelbrotSet
                     var imgY = ti + i;
                     var imgX = tj + j;
 
-                    //ColorMap.SetPixel(imgX, imgY, color);
-                    Colors[imgX, imgY] = color;
+                    ColorMap[imgY * rawBitmapStride + imgX * 3 + 0] = color.R;
+                    ColorMap[imgY * rawBitmapStride + imgX * 3 + 1] = color.G;
+                    ColorMap[imgY * rawBitmapStride + imgX * 3 + 2] = color.B;
                 }
             }
         }
@@ -255,9 +178,13 @@ namespace MandelbrotSet
             return (b - a) * ((x - minx) / (maxx - minx)) + a;
         }
         
-        public System.Windows.Media.Imaging.WriteableBitmap GetBitMap()
+        public System.Windows.Media.Imaging.BitmapSource GetBitmapSrc()
         {
-            return ColorMap;
+            var bitmap = System.Windows.Media.Imaging.BitmapSource.Create(Width, Height,
+                96, 96, System.Windows.Media.PixelFormats.Rgb24, null,
+                ColorMap, rawBitmapStride);
+
+            return bitmap;
         }
     }
 }

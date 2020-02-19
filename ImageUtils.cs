@@ -15,6 +15,28 @@ namespace MandelbrotSet
 {
     class ImageUtils
     {
+        public static int[,,] GerenateColorsArray(int width, int height)
+        {
+            var arr = new int[height, width, 3];
+
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    arr[i, j, 0] = 255;
+                    arr[i, j, 1] = 0;
+                    arr[i, j, 2] = 0;
+
+                    if (i == j)
+                    {
+                        arr[i, j, 0] = 0;
+                    }
+                }
+            }
+
+            return arr;
+        }
+
         public static Bitmap CreateBitmap(int width, int height, int[] rgb)
         {
             Bitmap bitmap = new Bitmap(width, height);

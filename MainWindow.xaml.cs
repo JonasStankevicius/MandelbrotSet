@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
@@ -26,25 +27,68 @@ namespace MandelbrotSet
 
         public MainWindow()
         {
-            InitializeComponent();           
-            ImageControl.MouseWheel += OnMouseScrool;
+            InitializeComponent();
 
+            //ExperimentWithBitmap();
+
+            ImageControl.MouseWheel += OnMouseScrool;
             curRect = new Rect(new System.Windows.Point(0, 0), new System.Windows.Point(ImageControl.Width, ImageControl.Height));
             DrawFractal();
         }
 
+        public void ExperimentWithBitmap()
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            int width = (int)ImageControl.Width;
+            int height = (int)ImageControl.Height;
+
+            int rawStride = width * 3; //rgb (8+8+8) = 3 bytes
+            byte[] rawImage = new byte[rawStride * height];
+
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {                    
+                    rawImage[i * rawStride + j * 3 + 0] = (byte)255;
+                    rawImage[i * rawStride + j * 3 + 1] = (byte)0;
+                    rawImage[i * rawStride + j * 3 + 2] = (byte)0;
+
+                    if (i == j)
+                    {
+                        rawImage[i * rawStride + j * 3 + 0] = (byte)0;
+                    }
+                }
+            }
+
+            // Create a BitmapSource.
+            BitmapSource bitmap = BitmapSource.Create(width, height,
+                96, 96, PixelFormats.Rgb24, null,
+                rawImage, rawStride);
+
+            sw.Stop();
+            Console.WriteLine($"Elapsed = {sw.Elapsed}");
+
+            ImageControl.Source = bitmap;
+        }
+
         public void DrawFractal()
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             var xRange = new Range(Fractal.NormalizeValue(curRect.Left, 0, ImageControl.Width, -2, 2), Fractal.NormalizeValue(curRect.Right, 0, ImageControl.Width, -2, 2));
             var yRange = new Range(Fractal.NormalizeValue(curRect.Bottom, 0, ImageControl.Height, -2, 2), Fractal.NormalizeValue(curRect.Top, 0, ImageControl.Height, -2, 2));
 
-            var fractal = new Fractal((int)ImageControl.Height*25, (int)ImageControl.Width*25, xRange, yRange, iterations: 100, tileHeight: 100, tileWidth: 100);
-            //fractal.Process();
+            var fractal = new Fractal((int)ImageControl.Height, (int)ImageControl.Width, xRange, yRange, iterations: 100, tileHeight: 50, tileWidth: 50);
             fractal.ProcessInParallel();
-            var bitmap = fractal.GetBitMap();
 
-            ImageUtils.SaveImage(bitmap);
-            ImageControl.Source = ImageUtils.ImageSourceFromBitmap(bitmap);
+            //ImageUtils.SaveImage(bitmap);
+            ImageControl.Source = fractal.GetBitmapSrc();
+
+            sw.Stop();
+            Console.WriteLine($"Elapsed = {sw.Elapsed}");
         }
 
         public void OnMouseScrool(object sender, MouseWheelEventArgs e)
