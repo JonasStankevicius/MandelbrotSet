@@ -23,7 +23,9 @@ namespace MandelbrotSet
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Rect curRect;
+        private Range xRange;
+        private Range yRange;
+        private double scroolStep = 0.05;
 
         public MainWindow()
         {
@@ -32,7 +34,8 @@ namespace MandelbrotSet
             //ExperimentWithBitmap();
 
             ImageControl.MouseWheel += OnMouseScrool;
-            curRect = new Rect(new System.Windows.Point(0, 0), new System.Windows.Point(ImageControl.Width, ImageControl.Height));
+            xRange = new Range(-2, 2);
+            yRange = new Range(-2, 2);
             DrawFractal();
         }
 
@@ -78,9 +81,6 @@ namespace MandelbrotSet
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            var xRange = new Range(Fractal.NormalizeValue(curRect.Left, 0, ImageControl.Width, -2, 2), Fractal.NormalizeValue(curRect.Right, 0, ImageControl.Width, -2, 2));
-            var yRange = new Range(Fractal.NormalizeValue(curRect.Bottom, 0, ImageControl.Height, -2, 2), Fractal.NormalizeValue(curRect.Top, 0, ImageControl.Height, -2, 2));
-
             var fractal = new Fractal((int)ImageControl.Height, (int)ImageControl.Width, xRange, yRange, iterations: 50, tileHeight: 50, tileWidth: 50);
             fractal.ProcessInParallel();
 
@@ -93,36 +93,32 @@ namespace MandelbrotSet
 
         public void OnMouseScrool(object sender, MouseWheelEventArgs e)
         {
-            var delta = (double)e.Delta / 1000.0;
+            double topLeftFactor = 0;
+            double widthFactor = 0;
+            if (e.Delta > 0)
+            {
+                topLeftFactor = scroolStep;
+                widthFactor = 1 - scroolStep;
+            }
+            else
+            {
+                topLeftFactor = -1 * scroolStep;
+                widthFactor = 1 + scroolStep;
+            }
+
             var pos = e.GetPosition(this.ImageControl);
+            var mouseX = Fractal.NormalizeValue(pos.X, 0, ImageControl.Width, -2, 2);
+            var mouseY = Fractal.NormalizeValue(pos.Y, 0, ImageControl.Height, 2, -2);
 
-            if(delta > 0)
-            {
-                var topLeft = curRect.TopLeft;
+            var xRangeMin = xRange.Min + (mouseX - xRange.Min) * topLeftFactor;
+            var yRangeMax = yRange.Max + (mouseY - yRange.Max) * topLeftFactor;
 
-                topLeft.X += (pos.X - curRect.Left) * 0.1;
-                topLeft.Y += (pos.Y - curRect.Top) * 0.1;
+            var xRangeMax = xRangeMin + xRange.Width * widthFactor;
+            var yRangeMin = yRangeMax - yRange.Width * widthFactor;
 
-                var bottomRight = topLeft;
-                bottomRight.X += curRect.Width * 0.9;
-                bottomRight.Y += curRect.Height * 0.9;
+            xRange = new Range(xRangeMin, xRangeMax);
+            yRange = new Range(yRangeMin, yRangeMax);
 
-                curRect = new Rect(topLeft, bottomRight);
-            }
-            else if (delta < 0 && curRect.Width < ImageControl.Width && curRect.Height < ImageControl.Height)
-            {
-                var topLeft = curRect.TopLeft;
-
-                topLeft.X -= (pos.X - curRect.Left) * 0.1;
-                topLeft.Y -= (pos.Y - curRect.Top) * 0.1;
-
-                var bottomRight = topLeft;
-                bottomRight.X += curRect.Width * 1.1;
-                bottomRight.Y += curRect.Height * 1.1;
-
-                curRect = new Rect(topLeft, bottomRight);
-            }
-            
             DrawFractal();
         }
     }

@@ -19,6 +19,14 @@ namespace MandelbrotSet
             this.Min = min;
             this.Max = max;
         }
+
+        public double Width
+        {
+            get
+            {
+                return Max - Min;
+            }
+        }
     }
 
     struct Coord
