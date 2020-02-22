@@ -88,7 +88,7 @@ namespace MandelbrotSet
             ImageControl.Source = fractal.GetBitmapSrc();
 
             sw.Stop();
-            Console.WriteLine($"Elapsed = {sw.Elapsed}");
+            Console.WriteLine($"Image generated = {sw.Elapsed}");
         }
 
         public void OnMouseScrool(object sender, MouseWheelEventArgs e)
@@ -116,8 +116,16 @@ namespace MandelbrotSet
             var xRangeMax = xRangeMin + xRange.Width * widthFactor;
             var yRangeMin = yRangeMax - yRange.Width * widthFactor;
 
-            xRange = new Range(xRangeMin, xRangeMax);
-            yRange = new Range(yRangeMin, yRangeMax);
+            var tempXRange = new Range(xRangeMin, xRangeMax);
+            var tempYRange = new Range(yRangeMin, yRangeMax);
+
+            if(tempXRange.Width < 0.1 || tempYRange.Width < 0.1 || tempXRange.Width > 2.0 || tempYRange.Width > 2.0)
+            {
+                return;
+            }
+
+            xRange = tempXRange;
+            yRange = tempYRange;
 
             DrawFractal();
         }
