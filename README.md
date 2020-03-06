@@ -48,3 +48,8 @@ Each frame is generated in less than 1/3 second.
 
 Technical documentation is provided in the folder "docs".  
 Run **"docs\index.html"** file in your internet browser.
+
+### Machine used for testing ###
+CPU: I7-3770  
+RAM: 16 GB  
+MEMORY: 500 GB SSD
